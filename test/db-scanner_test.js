@@ -5,7 +5,10 @@ require('chai').should();
 var Q = require('q');
 var _ = require('lodash');
 
-var DBScanner = require('../lib/db-scanner.js').DBScanner;
+// var DBSnapshot = require('../lib/db-snapshot');
+
+var ItemDescriptor = require('../lib/db-item-descriptor');
+var DBScanner = require('../lib/db-scanner').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
 var MOCKED_TABLE_DATA = {
     Items: [{
@@ -171,6 +174,11 @@ var TABLE_DESCRIPTION_WITHOUT_SECONDARY_INDEX = {
     ]
 };
 
+// var SNAPSHOT = [
+//     DBSnapshot.create(TABLE_DESCRIPTION, MOCKED_TABLE_DATA),
+//     DBSnapshot.create(TABLE_DESCRIPTION, MOCKED_TABLE_DATA)
+// ];
+
 function mockedDynamo() {
     return {
         listTables: sinon.stub().callsArgWith(0, null, {
@@ -180,6 +188,7 @@ function mockedDynamo() {
         describeTable: sinon.stub().callsArgWith(1, null, _.cloneDeep(TABLE_DESCRIPTION)),
         createTable: sinon.stub().callsArgWith(1, null),
         deleteTable: sinon.stub().callsArgWith(1, null),
+        getItem: sinon.stub().callsArgWith(1, null, _.cloneDeep(MOCKED_TABLE_DATA.Items[0])),
     };
 }
 
@@ -335,4 +344,41 @@ describe('db-scanner node module.', function(done) {
             done();
         }).catch(done);
     });
+
+    it('should get specific items from the DB', function() {
+        dbScanner.getItem(new ItemDescriptor(MOCKED_TABLES[0], {
+            id: MOCKED_TABLE_DATA.Items[0].id
+        })).then(function(item) {
+            item.should.eql(MOCKED_TABLE_DATA.Items[0]);
+            done();
+        }).catch(done);
+    });
+
+    // it('should add an item to the DB', function() {
+    //     var putItem;
+    //     var dynamo = mockedDynamo();
+    //     dynamo.putItem = function(item, cb) {
+    //         putItem = item;
+    //         cb(null);
+    //     };
+    //
+    //     dbScanner = new DBScanner(dynamo);
+    //     dbScanner.putItem(MOCKED_TABLE_DATA.Items[0]).then(function(){
+    //
+    //     }).catch(done);
+    // });
+
+    // it('should recreate a DB from snapshot', function(done) {
+    //     // TODO: This will totally hog the RAM. The JSON has to be streamed/chunked.
+    //     var tablesRemoved = [];
+    //     var dynamo = mockedDynamo();
+    //
+    //     dynamo.createTable = function(name, cb) {
+    //         tablesRemoved.push(name);
+    //         cb(null);
+    //     };
+    //
+    //     dbScanner = new DBScanner(dynamo);
+    //     dbScanner.recreateFromSnapshot(SNAPSHOT).then(function() {}).catch(done);
+    // });
 });
