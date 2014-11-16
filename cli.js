@@ -2,8 +2,12 @@
 
 'use strict';
 var AWS = require('aws-sdk');
-AWS.config.region = 'eu-west-1';
-var dynamo = new AWS.DynamoDB();
+var config = require('./config');
+var dynamo = new AWS.DynamoDB({
+    region: config.region || AWS.config.region,
+    endpoint: config.endpoint || AWS.config.endpoint
+});
+
 var _ = require('lodash');
 
 var dbScanner = new(require('./lib/db-scanner')).DBScanner(dynamo);
