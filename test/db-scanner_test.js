@@ -1,9 +1,8 @@
-/*global describe,it*/
+/*global describe,it,beforeEach*/
 'use strict';
 var sinon = require('sinon');
-// var rewire = require('rewire');
-// var assert = require('assert');
 require('chai').should();
+var Q = require('q');
 
 var DBScanner = require('../lib/db-scanner.js').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -32,20 +31,118 @@ var MOCKED_TABLE_DATA = {
     }]
 };
 
+var DIFFERENT_MOCKED_TABLE_DATA = {
+    Items: [{
+        "email": "rondabanks@brainquil.com",
+        "phone": "+1 (968) 595-3724",
+        "address": "421 Bragg Court, Belgreen, North Carolina, 1587"
+    }, {
+        "email": "rondabanks@brainquil.com",
+        "phone": "+1 (879) 596-2346",
+        "address": "532 Garfield Place, Fidelis, Kansas, 4662"
+    }, {
+        "email": "rondabanks@brainquil.com",
+        "phone": "+1 (978) 495-3874",
+        "address": "320 Schweikerts Walk, Tooleville, New Hampshire, 6954"
+    }, {
+        "email": "rondabanks@brainquil.com",
+        "phone": "+1 (949) 504-2296",
+        "address": "365 Montieth Street, Rosedale, Washington, 6243"
+    }, {
+        "email": "rondabanks@brainquil.com",
+        "phone": "+1 (923) 514-3837",
+        "address": "254 Baltic Street, Winfred, Utah, 9951"
+    }]
+};
+
 var TABLE_NAME = 'aaa';
 var EXPECTED_SCHEMA = Object.keys(MOCKED_TABLE_DATA.Items[0]).concat('a');
-var TABLE_DESCRIPTION = {};
+// http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property
+var TABLE_DESCRIPTION = {
+    AttributeDefinitions: [ /* required */ {
+            AttributeName: 'STRING_VALUE',
+            /* required */
+            AttributeType: 'S | N | B' /* required */
+        },
+        /* more items */
+    ],
+    KeySchema: [ /* required */ {
+            AttributeName: 'STRING_VALUE',
+            /* required */
+            KeyType: 'HASH | RANGE' /* required */
+        },
+        /* more items */
+    ],
+    ProvisionedThroughput: { /* required */
+        ReadCapacityUnits: 0,
+        /* required */
+        WriteCapacityUnits: 0 /* required */
+    },
+    TableName: 'STRING_VALUE',
+    /* required */
+    GlobalSecondaryIndexes: [{
+            IndexName: 'STRING_VALUE',
+            /* required */
+            KeySchema: [ /* required */ {
+                    AttributeName: 'STRING_VALUE',
+                    /* required */
+                    KeyType: 'HASH | RANGE' /* required */
+                },
+                /* more items */
+            ],
+            Projection: { /* required */
+                NonKeyAttributes: [
+                    'STRING_VALUE',
+                    /* more items */
+                ],
+                ProjectionType: 'ALL | KEYS_ONLY | INCLUDE'
+            },
+            ProvisionedThroughput: { /* required */
+                ReadCapacityUnits: 0,
+                /* required */
+                WriteCapacityUnits: 0 /* required */
+            }
+        },
+        /* more items */
+    ],
+    LocalSecondaryIndexes: [{
+            IndexName: 'STRING_VALUE',
+            /* required */
+            KeySchema: [ /* required */ {
+                    AttributeName: 'STRING_VALUE',
+                    /* required */
+                    KeyType: 'HASH | RANGE' /* required */
+                },
+                /* more items */
+            ],
+            Projection: { /* required */
+                NonKeyAttributes: [
+                    'STRING_VALUE',
+                    /* more items */
+                ],
+                ProjectionType: 'ALL | KEYS_ONLY | INCLUDE'
+            }
+        },
+        /* more items */
+    ]
+};
 
 function mockedDynamo() {
     return {
         listTables: sinon.stub().callsArgWith(0, null, MOCKED_TABLES),
         scan: sinon.stub().callsArgWith(1, null, MOCKED_TABLE_DATA),
         describeTable: sinon.stub().callsArgWith(1, null, TABLE_DESCRIPTION),
+        createTable: sinon.stub().callsArgWith(1, null),
     };
 }
 
 describe('db-scanner node module.', function() {
-    var dbScanner = new DBScanner(mockedDynamo());
+    var dbScanner;
+
+    beforeEach(function() {
+        dbScanner = new DBScanner(mockedDynamo());
+    });
+
     it('should list tables in dynamoDB', function(done) {
         dbScanner.listTables().then(function(tables) {
             tables.should.eql(MOCKED_TABLES);
@@ -72,5 +169,23 @@ describe('db-scanner node module.', function() {
             description.should.eql(TABLE_DESCRIPTION);
             done();
         });
+    });
+
+    it('should create a table given a correct description', function(done) {
+        var dynamo = mockedDynamo();
+        dynamo.createTable = function(description, cb) {
+            this.scan = sinon.stub().callsArgWith(1, null, DIFFERENT_MOCKED_TABLE_DATA);
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+
+        Q.all([
+            dbScanner.createTable(TABLE_DESCRIPTION),
+            dbScanner.scanTable(TABLE_NAME)
+        ]).then(function(data) {
+            data[1].should.eql(DIFFERENT_MOCKED_TABLE_DATA);
+            done();
+        }).catch(done);
     });
 });
