@@ -4,7 +4,7 @@
 var AWS = require('aws-sdk');
 var config = require('./config');
 var dynamo = new AWS.DynamoDB({
-    region: config.region || AWS.config.region,
+    region: config.region || AWS.config.region || 'eu-west-1',
     endpoint: config.endpoint || AWS.config.endpoint
 });
 
@@ -39,26 +39,30 @@ function stringify(obj) {
     return JSON.stringify(obj, null, ' ');
 }
 
+function given(val) {
+    return !!val;
+}
+
 var finish = stopWaiting(_.compose(log, stringify));
 
 switch (true) {
-    case !!argv.scan:
+    case given(argv.scan):
         wait = true;
         dbScanner.scanTable(argv.scan)
             .then(finish)
             .catch(stopWaiting);
         break;
-    case !!argv.list:
+    case given(argv.list):
         dbScanner.listTables()
             .then(finish)
             .catch(stopWaiting);
         break;
-    case !!argv.schema:
+    case given(argv.schema):
         dbScanner.getTableSchema(argv.schema)
             .then(finish)
             .catch(stopWaiting);
         break;
-    case !!argv.describe:
+    case given(argv.describe):
         dbScanner.describeTable(argv.describe)
             .then(finish)
             .catch(stopWaiting);
