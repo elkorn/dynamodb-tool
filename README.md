@@ -1,4 +1,3 @@
-#  [![Build Status](https://secure.travis-ci.org//db-scanner.png?branch=master)](http://travis-ci.org//db-scanner)
 
 > The best module ever.
 
@@ -21,15 +20,7 @@ $ db-scanner --version
 ```
 
 
-
-
 ## Documentation
-
-_(Coming soon)_
-
-
-## Examples
-
 _(Coming soon)_
 
 
