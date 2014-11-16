@@ -323,4 +323,16 @@ describe('db-scanner node module.', function(done) {
             tablesRemoved.should.eql(MOCKED_TABLES);
         }).catch(done);
     });
+
+    it('should create a snapshot', function(done) {
+        dbScanner.createSnapshot().then(function(snapshot) {
+            snapshot.length.should.equal(MOCKED_TABLES.length);
+            snapshot.forEach(function(snapshot) {
+                snapshot.Description.should.eql(TABLE_DESCRIPTION);
+                snapshot.Data.should.eql(MOCKED_TABLE_DATA);
+            });
+
+            done();
+        }).catch(done);
+    });
 });

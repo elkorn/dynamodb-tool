@@ -111,6 +111,9 @@ switch (true) {
         enforceSafety();
         run(dbScanner.deleteAllTables());
         break;
+    case givenArg('snapshot'):
+        run(dbScanner.createSnapshot());
+        break;
     default:
         wait = false;
 }
