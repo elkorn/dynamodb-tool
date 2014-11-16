@@ -178,10 +178,11 @@ function mockedDynamo() {
         scan: sinon.stub().callsArgWith(1, null, MOCKED_TABLE_DATA),
         describeTable: sinon.stub().callsArgWith(1, null, TABLE_DESCRIPTION),
         createTable: sinon.stub().callsArgWith(1, null),
+        deleteTable: sinon.stub().callsArgWith(1, null),
     };
 }
 
-describe('db-scanner node module.', function() {
+describe('db-scanner node module.', function(done) {
     var dbScanner;
 
     beforeEach(function() {
@@ -275,6 +276,22 @@ describe('db-scanner node module.', function() {
         dbScanner.createManyTables([TABLE_DESCRIPTION, TABLE_DESCRIPTION]).then(function() {
             tablesCreated.should.equal(2);
             done();
+        }).catch(done);
+    });
+
+    it('should remove a table', function() {
+        var tableRemoved = '';
+        var dynamo = mockedDynamo();
+        dynamo.createTable = function(name, cb) {
+            tableRemoved = name;
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+
+
+        dbScanner.deleteTable(TABLE_NAME).then(function() {
+            tableRemoved.should.eql(TABLE_NAME);
         }).catch(done);
     });
 });

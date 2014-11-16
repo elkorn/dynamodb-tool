@@ -1,4 +1,5 @@
 {
     "endpoint": "http://0.0.0.0:8000",
-    "region": "eu-west-1"
+    "region": "eu-west-1",
+    "verbose": true
 }

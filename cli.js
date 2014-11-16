@@ -57,7 +57,15 @@ function makeDbScanner() {
     return new(require('./lib/db-scanner')).DBScanner(makeDynamo());
 }
 
+function verbose(msg) {
+    if (config.verbose) {
+        console.log(msg);
+    }
+}
+
 var dbScanner = makeDbScanner();
+
+verbose('Endpoint: ' + config.endpoint);
 
 switch (true) {
     case givenArg('scan'):
@@ -99,6 +107,12 @@ switch (true) {
                 .then(finish)
                 .catch(finish);
         }
+        break;
+    case givenArg('delete'):
+        enforceSafety();
+        dbScanner.deleteTable(argv.delete)
+            .then(finish)
+            .catch(finish);
         break;
     default:
         wait = false;
