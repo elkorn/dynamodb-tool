@@ -289,9 +289,23 @@ describe('db-scanner node module.', function(done) {
 
         dbScanner = new DBScanner(dynamo);
 
-
         dbScanner.deleteTable(TABLE_NAME).then(function() {
             tableRemoved.should.eql(TABLE_NAME);
+        }).catch(done);
+    });
+
+    it('should remove all tables', function() {
+        var tablesRemoved = [];
+        var dynamo = mockedDynamo();
+        dynamo.createTable = function(name, cb) {
+            tablesRemoved.push(name);
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+
+        dbScanner.deleteAllTables(TABLE_NAME).then(function() {
+            tablesRemoved.should.eql(MOCKED_TABLES);
         }).catch(done);
     });
 });

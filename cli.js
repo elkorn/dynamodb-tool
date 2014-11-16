@@ -70,7 +70,6 @@ function run(promise) {
 }
 
 var dbScanner = makeDbScanner();
-
 verbose('Endpoint: ' + config.endpoint + '\n');
 
 switch (true) {
@@ -102,6 +101,10 @@ switch (true) {
     case givenArg('delete'):
         enforceSafety();
         run(dbScanner.deleteTable(argv.delete));
+        break;
+    case givenArg('delete-all'):
+        enforceSafety();
+        run(dbScanner.deleteAllTables());
         break;
     default:
         wait = false;
