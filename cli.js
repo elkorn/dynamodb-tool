@@ -63,56 +63,45 @@ function verbose(msg) {
     }
 }
 
+function run(promise) {
+    promise
+        .then(finish)
+        .catch(finish);
+}
+
 var dbScanner = makeDbScanner();
 
-verbose('Endpoint: ' + config.endpoint);
+verbose('Endpoint: ' + config.endpoint + '\n');
 
 switch (true) {
     case givenArg('scan'):
-        dbScanner.scanTable(argv.scan)
-            .then(finish)
-            .catch(finish);
+        run(dbScanner.scanTable(argv.scan));
         break;
     case givenArg('list'):
-        dbScanner.listTables()
-            .then(finish)
-            .catch(finish);
+        run(dbScanner.listTables());
         break;
     case givenArg('schema'):
-        dbScanner.getTableSchema(argv.schema)
-            .then(finish)
-            .catch(finish);
+        run(dbScanner.getTableSchema(argv.schema));
         break;
     case givenArg('describe'):
         if (typeof(argv.describe) === 'string') {
-            dbScanner.describeTable(argv.describe)
-                .then(finish)
-                .catch(finish);
+            run(dbScanner.describeTable(argv.describe));
         } else {
-            console.log('describing all tables');
-            dbScanner.describeAllTables()
-                .then(finish)
-                .catch(finish);
+            run(dbScanner.describeAllTables());
         }
         break;
     case givenArg('create'):
         enforceSafety();
         var descriptions = require(argv.create);
         if (_.isArray(descriptions)) {
-            dbScanner.createManyTables(descriptions)
-                .then(finish)
-                .catch(finish);
+            run(dbScanner.createManyTables(descriptions));
         } else {
-            dbScanner.createTable(descriptions)
-                .then(finish)
-                .catch(finish);
+            run(dbScanner.createTable(descriptions));
         }
         break;
     case givenArg('delete'):
         enforceSafety();
-        dbScanner.deleteTable(argv.delete)
-            .then(finish)
-            .catch(finish);
+        run(dbScanner.deleteTable(argv.delete));
         break;
     default:
         wait = false;
