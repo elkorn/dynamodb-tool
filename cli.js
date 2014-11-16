@@ -74,7 +74,12 @@ verbose('Endpoint: ' + config.endpoint + '\n');
 
 switch (true) {
     case givenArg('scan'):
-        run(dbScanner.scanTable(argv.scan));
+        if (argv.scan === true) {
+            run(dbScanner.scanAllTables());
+        } else {
+            run(dbScanner.scanTable(argv.scan));
+        }
+
         break;
     case givenArg('list'):
         run(dbScanner.listTables());

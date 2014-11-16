@@ -3,6 +3,7 @@
 var sinon = require('sinon');
 require('chai').should();
 var Q = require('q');
+var _ = require('lodash');
 
 var DBScanner = require('../lib/db-scanner.js').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -173,10 +174,10 @@ var TABLE_DESCRIPTION_WITHOUT_SECONDARY_INDEX = {
 function mockedDynamo() {
     return {
         listTables: sinon.stub().callsArgWith(0, null, {
-            TableNames: MOCKED_TABLES
+            TableNames: _.cloneDeep(MOCKED_TABLES)
         }),
-        scan: sinon.stub().callsArgWith(1, null, MOCKED_TABLE_DATA),
-        describeTable: sinon.stub().callsArgWith(1, null, TABLE_DESCRIPTION),
+        scan: sinon.stub().callsArgWith(1, null, _.cloneDeep(MOCKED_TABLE_DATA)),
+        describeTable: sinon.stub().callsArgWith(1, null, _.cloneDeep(TABLE_DESCRIPTION)),
         createTable: sinon.stub().callsArgWith(1, null),
         deleteTable: sinon.stub().callsArgWith(1, null),
     };
@@ -203,6 +204,18 @@ describe('db-scanner node module.', function(done) {
         }).catch(done);
     });
 
+    it('should scan contents of all tables', function(done) {
+        dbScanner.scanAllTables().then(function(tableData) {
+            tableData.length.should.equal(MOCKED_TABLES.length);
+            tableData.forEach(function(tableData) {
+                MOCKED_TABLES.should.contain(tableData.TableName);
+                _.omit(tableData, 'TableName').should.eql(MOCKED_TABLE_DATA);
+            });
+
+            done();
+        }).catch(done);
+    });
+
     it('should get the current schema based on table data', function(done) {
         dbScanner.getTableSchema(TABLE_NAME).then(function(schema) {
             schema.should.eql(EXPECTED_SCHEMA);
@@ -220,7 +233,7 @@ describe('db-scanner node module.', function(done) {
     it('should create a table given a correct description', function(done) {
         var dynamo = mockedDynamo();
         dynamo.createTable = function(description, cb) {
-            this.scan = sinon.stub().callsArgWith(1, null, DIFFERENT_MOCKED_TABLE_DATA);
+            this.scan = sinon.stub().callsArgWith(1, null, _.cloneDeep(DIFFERENT_MOCKED_TABLE_DATA));
             cb(null);
         };
 
@@ -238,7 +251,7 @@ describe('db-scanner node module.', function(done) {
     it('should create a table given a correct description without global secondary indexes', function(done) {
         var dynamo = mockedDynamo();
         dynamo.createTable = function(description, cb) {
-            this.scan = sinon.stub().callsArgWith(1, null, DIFFERENT_MOCKED_TABLE_DATA);
+            this.scan = sinon.stub().callsArgWith(1, null, _.cloneDeep(DIFFERENT_MOCKED_TABLE_DATA));
             cb(null);
         };
 
@@ -256,9 +269,11 @@ describe('db-scanner node module.', function(done) {
 
     it('should get all available table descriptions', function(done) {
         dbScanner.describeAllTables().then(function(descriptions) {
-            descriptions.length.should.equal(2);
-            descriptions[0].should.eql(TABLE_DESCRIPTION);
-            descriptions[1].should.eql(TABLE_DESCRIPTION);
+            descriptions.length.should.equal(MOCKED_TABLES.length);
+            descriptions.forEach(function(description) {
+                description.should.eql(TABLE_DESCRIPTION);
+            });
+
             done();
         }).catch(done);
     });
