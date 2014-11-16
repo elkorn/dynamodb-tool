@@ -7,7 +7,7 @@ var argv = require('minimist')(process.argv.slice(2));
 
 var config = require('./config');
 
-var wait = false;
+var wait = true;
 
 function stopWaiting(fn) {
     return function() {
@@ -33,13 +33,13 @@ function stringify(obj) {
     return JSON.stringify(obj, null, ' ');
 }
 
-function given(val) {
-    return !!val;
+function givenArg(val) {
+    return argv.hasOwnProperty(val);
 }
 
 function enforceSafety() {
-    if (!(given(argv.unsafe) || given(argv.u) || /http[s]?:\/\/0\.0\.0\.0(:\d{4})*/.test(config.endpoint))) {
-        throw new Error("Connect to local DynamoDB instance or enable unsafe mode and face the consequences.");
+    if (!(givenArg('unsafe') || givenArg('u') || /http[s]?:\/\/0\.0\.0\.0(:\d{4})*/.test(config.endpoint))) {
+        throw new Error("Connect to local DynamoDB instance or enable --unsafe mode and face the consequences.");
     }
 }
 
@@ -60,33 +60,41 @@ function makeDbScanner() {
 var dbScanner = makeDbScanner();
 
 switch (true) {
-    case given(argv.scan):
-        wait = true;
+    case givenArg('scan'):
         dbScanner.scanTable(argv.scan)
             .then(finish)
-            .catch(stopWaiting);
+            .catch(finish);
         break;
-    case given(argv.list):
+    case givenArg('list'):
         dbScanner.listTables()
             .then(finish)
-            .catch(stopWaiting);
+            .catch(finish);
         break;
-    case given(argv.schema):
+    case givenArg('schema'):
         dbScanner.getTableSchema(argv.schema)
             .then(finish)
-            .catch(stopWaiting);
+            .catch(finish);
         break;
-    case given(argv.describe):
-        dbScanner.describeTable(argv.describe)
-            .then(finish)
-            .catch(stopWaiting);
+    case givenArg('describe'):
+        if (typeof(argv.describe) === 'string') {
+            dbScanner.describeTable(argv.describe)
+                .then(finish)
+                .catch(finish);
+        } else {
+            console.log('describing all tables');
+            dbScanner.describeAllTables()
+                .then(finish)
+                .catch(finish);
+        }
         break;
-    case given(argv.create):
+    case givenArg('create'):
         enforceSafety();
         dbScanner.createTable(require(argv.create))
             .then(finish)
-            .catch(stopWaiting);
+            .catch(finish);
         break;
+    default:
+        wait = false;
 }
 
 doWait();

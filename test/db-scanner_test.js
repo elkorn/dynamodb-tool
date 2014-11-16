@@ -129,7 +129,9 @@ var TABLE_DESCRIPTION = {
 
 function mockedDynamo() {
     return {
-        listTables: sinon.stub().callsArgWith(0, null, MOCKED_TABLES),
+        listTables: sinon.stub().callsArgWith(0, null, {
+            TableNames: MOCKED_TABLES
+        }),
         scan: sinon.stub().callsArgWith(1, null, MOCKED_TABLE_DATA),
         describeTable: sinon.stub().callsArgWith(1, null, TABLE_DESCRIPTION),
         createTable: sinon.stub().callsArgWith(1, null),
@@ -145,30 +147,30 @@ describe('db-scanner node module.', function() {
 
     it('should list tables in dynamoDB', function(done) {
         dbScanner.listTables().then(function(tables) {
-            tables.should.eql(MOCKED_TABLES);
+            tables.TableNames.should.eql(MOCKED_TABLES);
             done();
-        });
+        }).catch(done);
     });
 
     it('should scan contents of a table', function(done) {
         dbScanner.scanTable(TABLE_NAME).then(function(tableData) {
             tableData.should.eql(MOCKED_TABLE_DATA);
             done();
-        });
+        }).catch(done);
     });
 
     it('should get the current schema based on table data', function(done) {
         dbScanner.getTableSchema(TABLE_NAME).then(function(schema) {
             schema.should.eql(EXPECTED_SCHEMA);
             done();
-        });
+        }).catch(done);
     });
 
     it('should get a table description', function(done) {
         dbScanner.describeTable(TABLE_NAME).then(function(description) {
             description.should.eql(TABLE_DESCRIPTION);
             done();
-        });
+        }).catch(done);
     });
 
     it('should create a table given a correct description', function(done) {
@@ -185,6 +187,15 @@ describe('db-scanner node module.', function() {
             dbScanner.scanTable(TABLE_NAME)
         ]).then(function(data) {
             data[1].should.eql(DIFFERENT_MOCKED_TABLE_DATA);
+            done();
+        }).catch(done);
+    });
+
+    it('should get all available table descriptions', function(done) {
+        dbScanner.describeAllTables().then(function(descriptions) {
+            descriptions.length.should.equal(2);
+            descriptions[0].should.eql(TABLE_DESCRIPTION);
+            descriptions[1].should.eql(TABLE_DESCRIPTION);
             done();
         }).catch(done);
     });
