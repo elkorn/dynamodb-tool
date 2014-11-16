@@ -89,9 +89,16 @@ switch (true) {
         break;
     case givenArg('create'):
         enforceSafety();
-        dbScanner.createTable(require(argv.create))
-            .then(finish)
-            .catch(finish);
+        var descriptions = require(argv.create);
+        if (_.isArray(descriptions)) {
+            dbScanner.createManyTables(descriptions)
+                .then(finish)
+                .catch(finish);
+        } else {
+            dbScanner.createTable(descriptions)
+                .then(finish)
+                .catch(finish);
+        }
         break;
     default:
         wait = false;

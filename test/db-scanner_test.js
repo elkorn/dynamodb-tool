@@ -127,6 +127,49 @@ var TABLE_DESCRIPTION = {
     ]
 };
 
+var TABLE_DESCRIPTION_WITHOUT_SECONDARY_INDEX = {
+    AttributeDefinitions: [ /* required */ {
+            AttributeName: 'STRING_VALUE',
+            /* required */
+            AttributeType: 'S | N | B' /* required */
+        },
+        /* more items */
+    ],
+    KeySchema: [ /* required */ {
+            AttributeName: 'STRING_VALUE',
+            /* required */
+            KeyType: 'HASH | RANGE' /* required */
+        },
+        /* more items */
+    ],
+    ProvisionedThroughput: { /* required */
+        ReadCapacityUnits: 0,
+        /* required */
+        WriteCapacityUnits: 0 /* required */
+    },
+    TableName: 'STRING_VALUE',
+    LocalSecondaryIndexes: [{
+            IndexName: 'STRING_VALUE',
+            /* required */
+            KeySchema: [ /* required */ {
+                    AttributeName: 'STRING_VALUE',
+                    /* required */
+                    KeyType: 'HASH | RANGE' /* required */
+                },
+                /* more items */
+            ],
+            Projection: { /* required */
+                NonKeyAttributes: [
+                    'STRING_VALUE',
+                    /* more items */
+                ],
+                ProjectionType: 'ALL | KEYS_ONLY | INCLUDE'
+            }
+        },
+        /* more items */
+    ]
+};
+
 function mockedDynamo() {
     return {
         listTables: sinon.stub().callsArgWith(0, null, {
@@ -191,11 +234,46 @@ describe('db-scanner node module.', function() {
         }).catch(done);
     });
 
+    it('should create a table given a correct description without global secondary indexes', function(done) {
+        var dynamo = mockedDynamo();
+        dynamo.createTable = function(description, cb) {
+            this.scan = sinon.stub().callsArgWith(1, null, DIFFERENT_MOCKED_TABLE_DATA);
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+
+        Q.all([
+            dbScanner.createTable(TABLE_DESCRIPTION_WITHOUT_SECONDARY_INDEX),
+            dbScanner.scanTable(TABLE_NAME)
+        ]).then(function(data) {
+            data[1].should.eql(DIFFERENT_MOCKED_TABLE_DATA);
+            done();
+        }).catch(done);
+
+    });
+
     it('should get all available table descriptions', function(done) {
         dbScanner.describeAllTables().then(function(descriptions) {
             descriptions.length.should.equal(2);
             descriptions[0].should.eql(TABLE_DESCRIPTION);
             descriptions[1].should.eql(TABLE_DESCRIPTION);
+            done();
+        }).catch(done);
+    });
+
+    it('should create many tables', function(done) {
+        var tablesCreated = 0;
+        var dynamo = mockedDynamo();
+        dynamo.createTable = function(description, cb) {
+            tablesCreated++;
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+
+        dbScanner.createManyTables([TABLE_DESCRIPTION, TABLE_DESCRIPTION]).then(function() {
+            tablesCreated.should.equal(2);
             done();
         }).catch(done);
     });
