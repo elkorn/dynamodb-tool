@@ -72,4 +72,12 @@ describe('db-item-descriptor', function() {
             item[prop].should.eql(new AwsAttribute(value));
         });
     });
+
+    it('should parse numeric attributes correctly', function() {
+        var descriptor = new ItemDescriptor('test', {
+            num: 12
+        });
+
+        descriptor.Key.num.N.should.be.a('string');
+    });
 });
