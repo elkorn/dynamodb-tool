@@ -80,4 +80,27 @@ describe('db-item-descriptor', function() {
 
         descriptor.Key.num.N.should.be.a('string');
     });
+
+    it('should recognize AWS attributes', function() {
+        var attrs = [{
+            N: 'aaa'
+        }, {
+            S: 'aaa'
+        }, {
+            M: 'aaa'
+        }, {
+            L: ['aaa']
+        }, {
+            SS: ['aaa']
+        }, {
+            NULL: null
+        }, {
+            BOOL: false
+        }];
+
+        attrs.forEach(function(attr) {
+            var awsAttr = new AwsAttribute(attr);
+            awsAttr.should.eql(attr);
+        });
+    });
 });

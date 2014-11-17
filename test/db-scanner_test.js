@@ -386,6 +386,11 @@ describe('db-scanner', function(done) {
             }).catch(done);
     });
 
+    // it('should add multiple items to the DB', function(done) {
+    //     dbScanner.putMultipleItems(MOCKED_TABLES[0], []).then(function() {
+    //     });
+    // });
+
     // it('should recreate a DB from snapshot', function(done) {
     //     // TODO: This will totally hog the RAM. The JSON has to be streamed/chunked.
     //     var tablesRemoved = [];
