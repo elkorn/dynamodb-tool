@@ -4,8 +4,7 @@
 
 var _ = require('lodash');
 var argv = require('minimist')(process.argv.slice(2));
-
-var config = require('./config');
+var config = require(argv.config || './config');
 
 var wait = true;
 
@@ -45,22 +44,25 @@ function enforceSafety() {
 
 var finish = stopWaiting(_.compose(log, stringify));
 
-function makeDynamo() {
-    var AWS = require('aws-sdk');
-    return new AWS.DynamoDB({
-        region: config.region || AWS.config.region || 'eu-west-1',
-        endpoint: config.endpoint || AWS.config.endpoint
-    });
-}
-
-function makeDbScanner() {
-    return new(require('./lib/db-scanner')).DBScanner(makeDynamo());
-}
-
 function verbose(msg) {
     if (config.verbose) {
         console.log(msg);
     }
+}
+
+function makeDynamo() {
+    var AWS = require('aws-sdk');
+    var result = new AWS.DynamoDB({
+        region: config.region || AWS.config.region || 'eu-west-1',
+        endpoint: config.endpoint || AWS.config.endpoint
+    });
+
+    verbose('Endpoint: ' + result.endpoint.host + '\n');
+    return result;
+}
+
+function makeDbScanner() {
+    return new(require('./lib/db-scanner')).DBScanner(makeDynamo());
 }
 
 function run(promise) {
@@ -90,7 +92,6 @@ function parseItemArguments(argv) {
 }
 
 var dbScanner = makeDbScanner();
-verbose('Endpoint: ' + config.endpoint + '\n');
 
 switch (true) {
     case givenArg('scan'):
@@ -156,7 +157,11 @@ switch (true) {
             snapshot = require(argv.recreate);
         }
 
-        run(dbScanner.recreateFromSnapshot(snapshot));
+        run(dbScanner.deleteAllTables()
+            .then(
+                _.partial(
+                    dbScanner.recreateFromSnapshot,
+                    snapshot)));
         break;
     default:
         wait = false;
