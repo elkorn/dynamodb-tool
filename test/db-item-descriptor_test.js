@@ -5,6 +5,7 @@ var _ = require('lodash');
 
 var itemDescriptor = require('../lib/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
+var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
 var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -58,6 +59,17 @@ describe('db-item-descriptor', function() {
         _.forEach(expected, function(value, prop) {
             key.should.have.property(prop);
             key[prop].should.eql(new AwsAttribute(value));
+        });
+    });
+
+    it('should support PUT request convention', function() {
+        var descriptor = new PutItemDescriptor(MOCKED_TABLES[0], expected);
+        descriptor.should.have.property('Item');
+        descriptor.should.have.property('TableName', MOCKED_TABLES[0]);
+        var item = descriptor.Item;
+        _.forEach(expected, function(value, prop) {
+            item.should.have.property(prop);
+            item[prop].should.eql(new AwsAttribute(value));
         });
     });
 });

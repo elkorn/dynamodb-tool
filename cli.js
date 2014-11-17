@@ -69,6 +69,26 @@ function run(promise) {
         .catch(finish);
 }
 
+function parseItemArguments(argv) {
+    if (typeof(argv) !== 'string') {
+        throw new Error('The argument for item operations must be a string.');
+    }
+
+    var args = argv.split(/=/);
+    try {
+        args[1] = JSON.parse(args[1]);
+    } catch (e) {
+        if (typeof(args[1]) !== 'string') {
+            throw new Error('Invalid item descriptor provided.');
+        }
+
+        args[1] = require(args[1]);
+    }
+
+    console.log(args);
+    return args;
+}
+
 var dbScanner = makeDbScanner();
 verbose('Endpoint: ' + config.endpoint + '\n');
 
@@ -115,18 +135,13 @@ switch (true) {
         run(dbScanner.createSnapshot());
         break;
     case givenArg('get'):
-        var args = argv.get.split(/\W/);
-        try {
-            args[1] = JSON.parse(args[1]);
-            run(dbScanner.getItem(args[0], args[1]));
-        } catch (e) {
-            if (typeof(args[1]) === 'string') {
-                run(dbScanner.getItem(args[0], require(args[1])));
-            } else {
-                throw new Error('Invalid item descriptor provided.');
-            }
-        }
-
+        var args = parseItemArguments(argv.get);
+        run(dbScanner.getItem(args[0], args[1]));
+        break;
+    case givenArg('put'):
+        enforceSafety();
+        var args = parseItemArguments(argv.put);
+        run(dbScanner.putItem(args[0], args[1]));
         break;
     default:
         wait = false;

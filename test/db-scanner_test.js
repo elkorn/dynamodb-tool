@@ -8,6 +8,7 @@ var _ = require('lodash');
 // var DBSnapshot = require('../lib/db-snapshot');
 var itemDescriptor = require('../lib/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
+var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
 // var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var DBScanner = require('../lib/db-scanner').DBScanner;
@@ -191,6 +192,7 @@ function mockedDynamo() {
         createTable: sinon.stub().callsArgWith(1, null),
         deleteTable: sinon.stub().callsArgWith(1, null),
         getItem: sinon.stub().callsArgWith(1, null, _.cloneDeep(MOCKED_TABLE_DATA.Items[0])),
+        putItem: sinon.stub().callsArgWith(1, null, _.cloneDeep(MOCKED_TABLE_DATA.Items[0])),
     };
 }
 
@@ -365,21 +367,25 @@ describe('db-scanner', function(done) {
             result.should.eql(MOCKED_TABLE_DATA.Items[0]);
         }).catch(done);
     });
-    //
-    // it('should add an item to the DB', function() {
-    //     var putItem;
-    //     var dynamo = mockedDynamo();
-    //     dynamo.putItem = function(item, cb) {
-    //         putItem = item;
-    //         cb(null);
-    //     };
-    //
-    //     dbScanner = new DBScanner(dynamo);
-    //     dbScanner.putItem(MOCKED_TABLE_DATA.Items[0]).then(function() {
-    //         putItem.should.eql(new ItemDescriptor(MOCKED_TABLE_DATA.Items[0]));
-    //     }).catch(done);
-    // });
-    //
+
+    it('should add an item to the DB', function(done) {
+        var putItem;
+        var dynamo = mockedDynamo();
+        dynamo.putItem = function(item, cb) {
+            putItem = item;
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.putItem(MOCKED_TABLES[0], MOCKED_TABLE_DATA.Items[0])
+            .then(function() {
+                putItem.should.eql(new PutItemDescriptor(
+                    MOCKED_TABLES[0],
+                    MOCKED_TABLE_DATA.Items[0]));
+                done();
+            }).catch(done);
+    });
+
     // it('should recreate a DB from snapshot', function(done) {
     //     // TODO: This will totally hog the RAM. The JSON has to be streamed/chunked.
     //     var tablesRemoved = [];
