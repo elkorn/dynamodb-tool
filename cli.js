@@ -150,6 +150,7 @@ switch (true) {
 
         break;
     case givenArg('recreate'):
+        enforceSafety();
         var snapshot;
         try {
             snapshot = JSON.parse(argv.recreate);
