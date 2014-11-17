@@ -114,6 +114,20 @@ switch (true) {
     case givenArg('snapshot'):
         run(dbScanner.createSnapshot());
         break;
+    case givenArg('get'):
+        var args = argv.get.split(/\W/);
+        try {
+            args[1] = JSON.parse(args[1]);
+            run(dbScanner.getItem(args[0], args[1]));
+        } catch (e) {
+            if (typeof(args[1]) === 'string') {
+                run(dbScanner.getItem(args[0], require(args[1])));
+            } else {
+                throw new Error('Invalid item descriptor provided.');
+            }
+        }
+
+        break;
     default:
         wait = false;
 }

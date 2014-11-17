@@ -6,8 +6,10 @@ var Q = require('q');
 var _ = require('lodash');
 
 // var DBSnapshot = require('../lib/db-snapshot');
+var itemDescriptor = require('../lib/db-item-descriptor');
+var ItemDescriptor = itemDescriptor.ItemDescriptor;
+// var AwsAttribute = itemDescriptor.AwsAttribute;
 
-var ItemDescriptor = require('../lib/db-item-descriptor');
 var DBScanner = require('../lib/db-scanner').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
 var MOCKED_TABLE_DATA = {
@@ -192,7 +194,7 @@ function mockedDynamo() {
     };
 }
 
-describe('db-scanner node module.', function(done) {
+describe('db-scanner', function(done) {
     var dbScanner;
 
     beforeEach(function() {
@@ -345,15 +347,25 @@ describe('db-scanner node module.', function(done) {
         }).catch(done);
     });
 
-    it('should get specific items from the DB', function() {
-        dbScanner.getItem(new ItemDescriptor(MOCKED_TABLES[0], {
-            id: MOCKED_TABLE_DATA.Items[0].id
-        })).then(function(item) {
-            item.should.eql(MOCKED_TABLE_DATA.Items[0]);
-            done();
+    it('should get an item from the DB', function() {
+        var arg;
+        var dynamo = mockedDynamo();
+        dynamo.getItem = function(descriptor, cb) {
+            arg = descriptor;
+            cb(null);
+        };
+
+        var id = {
+            _id: MOCKED_TABLE_DATA.Items[0]._id
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.getItem(MOCKED_TABLES[0], id).then(function(result) {
+            arg.should.eql(new ItemDescriptor(MOCKED_TABLES[0], id));
+            result.should.eql(MOCKED_TABLE_DATA.Items[0]);
         }).catch(done);
     });
-
+    //
     // it('should add an item to the DB', function() {
     //     var putItem;
     //     var dynamo = mockedDynamo();
@@ -363,11 +375,11 @@ describe('db-scanner node module.', function(done) {
     //     };
     //
     //     dbScanner = new DBScanner(dynamo);
-    //     dbScanner.putItem(MOCKED_TABLE_DATA.Items[0]).then(function(){
-    //
+    //     dbScanner.putItem(MOCKED_TABLE_DATA.Items[0]).then(function() {
+    //         putItem.should.eql(new ItemDescriptor(MOCKED_TABLE_DATA.Items[0]));
     //     }).catch(done);
     // });
-
+    //
     // it('should recreate a DB from snapshot', function(done) {
     //     // TODO: This will totally hog the RAM. The JSON has to be streamed/chunked.
     //     var tablesRemoved = [];
