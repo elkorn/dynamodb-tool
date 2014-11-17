@@ -461,4 +461,28 @@ describe('db-scanner', function(done) {
             done();
         }).catch(done);
     });
+
+    it('should recreate a DB from snapshot', function(done) {
+        // TODO: This will hog the RAM. The JSON has to be streamed/chunked.
+        var tablesAdded = [];
+        var itemsAdded = [];
+        var dynamo = mockedDynamo();
+
+        dynamo.createTable = function(name, cb) {
+            tablesAdded.push(name);
+            cb(null);
+        };
+
+        dynamo.batchWriteItem = function(batch, cb) {
+            itemsAdded = itemsAdded.concat(batch.RequestItems.STRING_VALUE);
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.recreateFromSnapshot(SNAPSHOT).then(function() {
+            tablesAdded.length.should.equal(SNAPSHOT.length);
+            itemsAdded.length.should.equal(SNAPSHOT.length * MOCKED_TABLE_DATA.Items.length);
+            done();
+        }).catch(done);
+    });
 });

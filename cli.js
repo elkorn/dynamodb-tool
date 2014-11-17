@@ -148,6 +148,16 @@ switch (true) {
         }
 
         break;
+    case givenArg('recreate'):
+        var snapshot;
+        try {
+            snapshot = JSON.parse(argv.recreate);
+        } catch (e) {
+            snapshot = require(argv.recreate);
+        }
+
+        run(dbScanner.recreateFromSnapshot(snapshot));
+        break;
     default:
         wait = false;
 }
