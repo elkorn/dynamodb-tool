@@ -5,7 +5,9 @@ var _ = require('lodash');
 
 var itemDescriptor = require('../lib/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
+var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
+var BatchWriteItemDescriptor = itemDescriptor.BatchWriteItemDescriptor;
 var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -102,5 +104,25 @@ describe('db-item-descriptor', function() {
             var awsAttr = new AwsAttribute(attr);
             awsAttr.should.eql(attr);
         });
+    });
+
+    it('should support batch write request', function() {
+        var data = [{
+            num: 12
+        }, {
+            num: 13
+        }];
+        var descriptor = new BatchWriteItemDescriptor('test', data);
+
+        descriptor.should.have.property('RequestItems');
+        var items = descriptor.RequestItems;
+        items.should.have.property('test');
+        items.test.should.eql(data.map(function(item) {
+            return {
+                PutRequest: {
+                    Item: new ItemValueDescriptor(item)
+                }
+            };
+        }));
     });
 });

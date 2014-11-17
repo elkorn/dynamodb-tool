@@ -141,7 +141,12 @@ switch (true) {
     case givenArg('put'):
         enforceSafety();
         var args = parseItemArguments(argv.put);
-        run(dbScanner.putItem(args[0], args[1]));
+        if (_.isArray(args[1])) {
+            run(dbScanner.putMultipleItems(args[0], args[1]));
+        } else {
+            run(dbScanner.putItem(args[0], args[1]));
+        }
+
         break;
     default:
         wait = false;

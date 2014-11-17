@@ -5,10 +5,11 @@ require('chai').should();
 var Q = require('q');
 var _ = require('lodash');
 
-// var DBSnapshot = require('../lib/db-snapshot');
+var DBSnapshot = require('../lib/db-snapshot');
 var itemDescriptor = require('../lib/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
+var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 // var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var DBScanner = require('../lib/db-scanner').DBScanner;
@@ -33,6 +34,11 @@ var MOCKED_TABLE_DATA = {
     }, {
         '_id': '5468bf19f42a703fbdcddcd4',
         'index': 4,
+        'guid': '5e00ac67-8129-4e4b-a293-006668eb3974',
+        'a': 'b'
+    }, {
+        '_id': '5668bf19f42a703fbdcddcd4',
+        'index': 5,
         'guid': '5e00ac67-8129-4e4b-a293-006668eb3974',
         'a': 'b'
     }]
@@ -177,10 +183,14 @@ var TABLE_DESCRIPTION_WITHOUT_SECONDARY_INDEX = {
     ]
 };
 
-// var SNAPSHOT = [
-//     DBSnapshot.create(TABLE_DESCRIPTION, MOCKED_TABLE_DATA),
-//     DBSnapshot.create(TABLE_DESCRIPTION, MOCKED_TABLE_DATA)
-// ];
+var SNAPSHOT = [
+    DBSnapshot.create({
+        Table: TABLE_DESCRIPTION
+    }, MOCKED_TABLE_DATA),
+    DBSnapshot.create({
+        Table: TABLE_DESCRIPTION
+    }, MOCKED_TABLE_DATA)
+];
 
 function mockedDynamo() {
     return {
@@ -386,22 +396,69 @@ describe('db-scanner', function(done) {
             }).catch(done);
     });
 
-    // it('should add multiple items to the DB', function(done) {
-    //     dbScanner.putMultipleItems(MOCKED_TABLES[0], []).then(function() {
-    //     });
-    // });
+    it('should add multiple items to the DB', function(done) {
+        var putItems;
 
-    // it('should recreate a DB from snapshot', function(done) {
-    //     // TODO: This will totally hog the RAM. The JSON has to be streamed/chunked.
-    //     var tablesRemoved = [];
-    //     var dynamo = mockedDynamo();
-    //
-    //     dynamo.createTable = function(name, cb) {
-    //         tablesRemoved.push(name);
-    //         cb(null);
-    //     };
-    //
-    //     dbScanner = new DBScanner(dynamo);
-    //     dbScanner.recreateFromSnapshot(SNAPSHOT).then(function() {}).catch(done);
-    // });
+        var dynamo = mockedDynamo();
+        dynamo.batchWriteItem = function(request, cb) {
+            putItems = _.pluck(request.RequestItems[MOCKED_TABLES[0]], 'PutRequest');
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.putMultipleItems(MOCKED_TABLES[0], MOCKED_TABLE_DATA.Items).then(function() {
+            putItems.should.eql(MOCKED_TABLE_DATA.Items.map(function(item) {
+                return {
+                    Item: new ItemValueDescriptor(item)
+                };
+            }));
+            done();
+        }).catch(done);
+    });
+
+    it('should batch massive writes', function(done) {
+        var writtenBatches = 0;
+        var largeDataset = [];
+        var batchSize = 25;
+        for (var i = 0, len = batchSize; i < len; i++) {
+            largeDataset = largeDataset.concat(MOCKED_TABLE_DATA.Items);
+        }
+
+        var dynamo = mockedDynamo();
+        dynamo.batchWriteItem = function(request, cb) {
+            request.RequestItems[MOCKED_TABLES[0]].should.have.length(batchSize);
+            writtenBatches++;
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.putMultipleItems(MOCKED_TABLES[0], largeDataset).then(function() {
+            writtenBatches.should.equal(largeDataset.length / batchSize);
+            done();
+        }).catch(done);
+
+    });
+
+    it('should add elements leftover from batches', function(done) {
+        var writtenElements = 0;
+        var largeDataset = [];
+        var batchSize = 25;
+        for (var i = 0, len = batchSize; i < len; i++) {
+            largeDataset = largeDataset.concat(MOCKED_TABLE_DATA.Items);
+        }
+
+        largeDataset = largeDataset.concat(MOCKED_TABLE_DATA.Items.slice(0, 7));
+
+        var dynamo = mockedDynamo();
+        dynamo.batchWriteItem = function(request, cb) {
+            writtenElements += request.RequestItems[MOCKED_TABLES[0]].length;
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.putMultipleItems(MOCKED_TABLES[0], largeDataset).then(function() {
+            writtenElements.should.eql(largeDataset.length);
+            done();
+        }).catch(done);
+    });
 });
