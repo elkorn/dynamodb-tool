@@ -37,7 +37,7 @@ function givenArg(val) {
 }
 
 function enforceSafety() {
-    if (!(givenArg('unsafe') || givenArg('u') || /http[s]?:\/\/0\.0\.0\.0(:\d{4})*/.test(config.endpoint))) {
+    if (!(givenArg('unsafe') || givenArg('u') || /http[s]?:\/\/0\.0\.0\.0(:\d+)?/.test(config.endpoint))) {
         throw new Error("Connect to local DynamoDB instance or enable --unsafe mode and face the consequences.");
     }
 }
