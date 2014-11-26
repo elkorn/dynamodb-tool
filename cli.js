@@ -46,7 +46,7 @@ var finish = stopWaiting(_.compose(log, stringify));
 
 function verbose(msg) {
     if (config.verbose) {
-        console.log(msg);
+        process.stderr.write(msg);
     }
 }
 
@@ -87,7 +87,7 @@ function parseItemArguments(argv) {
         args[1] = require(args[1]);
     }
 
-    console.log(args);
+    verbose(args);
     return args;
 }
 
@@ -103,15 +103,19 @@ switch (true) {
 
         break;
     case givenArg('list'):
+         verbose('listing tables...');
         run(dbScanner.listTables());
         break;
     case givenArg('schema'):
+         verbose('getting DB schema...');
         run(dbScanner.getTableSchema(argv.schema));
         break;
     case givenArg('describe'):
         if (typeof(argv.describe) === 'string') {
+            verbose('describing a table...');
             run(dbScanner.describeTable(argv.describe));
         } else {
+            verbose('describing all tables...');
             run(dbScanner.describeAllTables());
         }
         break;
@@ -119,23 +123,29 @@ switch (true) {
         enforceSafety();
         var descriptions = require(argv.create);
         if (_.isArray(descriptions)) {
+            verbose('creating multiple tables...');
             run(dbScanner.createManyTables(descriptions));
         } else {
+            verbose('creating a table...');
             run(dbScanner.createTable(descriptions));
         }
         break;
     case givenArg('delete'):
         enforceSafety();
+        verbose('deleting a table...');
         run(dbScanner.deleteTable(argv.delete));
         break;
     case givenArg('delete-all'):
         enforceSafety();
+        verbose('deleting all tables...');
         run(dbScanner.deleteAllTables());
         break;
     case givenArg('snapshot'):
+        verbose('creating a snapshot...');
         run(dbScanner.createSnapshot());
         break;
     case givenArg('get'):
+        verbose('getting item...');
         var args = parseItemArguments(argv.get);
         run(dbScanner.getItem(args[0], args[1]));
         break;
@@ -143,8 +153,10 @@ switch (true) {
         enforceSafety();
         var args = parseItemArguments(argv.put);
         if (_.isArray(args[1])) {
+            verbose('putting mutliple items...');
             run(dbScanner.putMultipleItems(args[0], args[1]));
         } else {
+            verbose('putting single item...');
             run(dbScanner.putItem(args[0], args[1]));
         }
 
@@ -157,6 +169,8 @@ switch (true) {
         } catch (e) {
             snapshot = require(argv.recreate);
         }
+
+        verbose('recreating database...');
 
         run(dbScanner.deleteAllTables()
             .then(
