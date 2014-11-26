@@ -46,7 +46,7 @@ var finish = stopWaiting(_.compose(log, stringify));
 
 function verbose(msg) {
     if (config.verbose) {
-        process.stderr.write(msg);
+        process.stderr.write(msg + '\n');
     }
 }
 
