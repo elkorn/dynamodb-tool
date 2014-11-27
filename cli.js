@@ -57,7 +57,7 @@ function makeDynamo() {
         endpoint: config.endpoint || AWS.config.endpoint
     });
 
-    verbose('Endpoint: ' + result.endpoint.host + '\n');
+    verbose('\nEndpoint: ' + result.endpoint.host + '\n');
     return result;
 }
 
