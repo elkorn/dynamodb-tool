@@ -44,9 +44,13 @@ function enforceSafety() {
 
 var finish = stopWaiting(_.compose(log, stringify));
 
+function say(msg) {
+    process.stderr.write(msg + '\n');
+}
+
 function verbose(msg) {
     if (config.verbose) {
-        process.stderr.write(msg + '\n');
+        say(msg);
     }
 }
 
@@ -103,11 +107,11 @@ switch (true) {
 
         break;
     case givenArg('list'):
-         verbose('listing tables...');
+        verbose('listing tables...');
         run(dbScanner.listTables());
         break;
     case givenArg('schema'):
-         verbose('getting DB schema...');
+        verbose('getting DB schema...');
         run(dbScanner.getTableSchema(argv.schema));
         break;
     case givenArg('describe'):
@@ -141,7 +145,7 @@ switch (true) {
         run(dbScanner.deleteAllTables());
         break;
     case givenArg('snapshot'):
-        verbose('creating a snapshot...');
+        say('creating a snapshot...');
         run(dbScanner.createSnapshot());
         break;
     case givenArg('get'):
@@ -170,7 +174,7 @@ switch (true) {
             snapshot = require(argv.recreate);
         }
 
-        verbose('recreating database...');
+        say('recreating database...');
 
         run(dbScanner.deleteAllTables()
             .then(
