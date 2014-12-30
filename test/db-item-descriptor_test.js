@@ -89,7 +89,15 @@ describe('db-item-descriptor', function() {
         }, {
             S: 'aaa'
         }, {
-            M: 'aaa'
+            M: {
+                x: {
+                    M: {
+                        y: {
+                            S: 'aaa'
+                        }
+                    }
+                }
+            }
         }, {
             L: ['aaa']
         }, {
@@ -124,5 +132,28 @@ describe('db-item-descriptor', function() {
                 }
             };
         }));
+    });
+
+    it('should create correct item descriptors from nested objects', function() {
+        var obj = {
+            x: {
+                y: 12
+            }
+        };
+
+        var expected = {
+            x: {
+                M: {
+                    y: {
+                        N: "12"
+                    }
+                }
+            }
+        };
+
+
+        var descriptor = new ItemDescriptor(MOCKED_TABLES[0], obj);
+        console.log(descriptor);
+        descriptor.Key.x.should.eql(expected.x);
     });
 });
