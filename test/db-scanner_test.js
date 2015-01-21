@@ -9,8 +9,8 @@ var DBSnapshot = require('../lib/db-snapshot');
 var itemDescriptor = require('../lib/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
+var UpdateItemDescriptor = itemDescriptor.UpdateItemDescriptor;
 var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
-// var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var DBScanner = require('../lib/db-scanner').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -484,5 +484,32 @@ describe('db-scanner', function(done) {
             itemsAdded.length.should.equal(SNAPSHOT.length * MOCKED_TABLE_DATA.Items.length);
             done();
         }).catch(done);
+    });
+
+    it('should update an item', function() {
+        var updateItem;
+        var dynamo = mockedDynamo();
+        dynamo.updateItem = function(item, cb) {
+            updateItem = item;
+            cb(null);
+        };
+
+        var updateInput = {
+            Key: {
+                testKey: 1234,
+            },
+            Put: {
+                testValue: true
+            }
+        };
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.updateItem(MOCKED_TABLES[0], updateInput)
+            .then(function() {
+                updateItem.should.eql(new UpdateItemDescriptor(
+                    MOCKED_TABLES[0],
+                    updateInput));
+                done();
+            }).catch(done);
     });
 });

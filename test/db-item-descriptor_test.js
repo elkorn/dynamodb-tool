@@ -8,6 +8,7 @@ var ItemDescriptor = itemDescriptor.ItemDescriptor;
 var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
 var BatchWriteItemDescriptor = itemDescriptor.BatchWriteItemDescriptor;
+var UpdateItemDescriptor = itemDescriptor.UpdateItemDescriptor;
 var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -151,9 +152,46 @@ describe('db-item-descriptor', function() {
             }
         };
 
-
         var descriptor = new ItemDescriptor(MOCKED_TABLES[0], obj);
-        console.log(descriptor);
         descriptor.Key.x.should.eql(expected.x);
+    });
+
+    it('should create a correct descriptor for udpating an existing entry', function() {
+        var tableName = 'test';
+        var obj = {
+            Key: {
+                testName: 'testValue'
+            },
+            Put: {
+                testPut: 1
+            },
+            Add: {
+                testAdd: 2
+            },
+            Delete: {
+                testDelete: 3
+            }
+        };
+
+        var result = new UpdateItemDescriptor(tableName, obj);
+        result.TableName.should.eql(tableName);
+        result.AttributeUpdates.testPut.should.eql({
+            Action: 'PUT',
+            Value: {
+                N: obj.Put.testPut.toString()
+            }
+        });
+        result.AttributeUpdates.testAdd.should.eql({
+            Action: 'ADD',
+            Value: {
+                N: obj.Add.testAdd.toString()
+            }
+        });
+        result.AttributeUpdates.testDelete.should.eql({
+            Action: 'DELETE',
+            Value: {
+                N: obj.Delete.testDelete.toString()
+            }
+        });
     });
 });

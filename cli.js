@@ -81,6 +81,7 @@ function parseItemArguments(argv) {
     }
 
     var args = argv.split(/=/);
+    console.log(args);
     try {
         args[1] = JSON.parse(args[1]);
     } catch (e) {
@@ -162,6 +163,23 @@ switch (true) {
         } else {
             verbose('putting single item...');
             run(dbScanner.putItem(args[0], args[1]));
+        }
+
+        break;
+    case givenArg('update'):
+        enforceSafety();
+        var updateInput;
+        try {
+            updateInput = JSON.parse(argv.update);
+        } catch (e) {
+            updateInput = require(argv.update);
+        }
+
+        if (_.isArray(updateInput)) {
+            // verbose('updating multiple items...');
+        } else {
+            verbose('updating single item...');
+            run(dbScanner.update(updateInput.TableName, updateInput));
         }
 
         break;
