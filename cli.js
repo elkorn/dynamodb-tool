@@ -176,10 +176,11 @@ switch (true) {
         }
 
         if (_.isArray(updateInput)) {
-            // verbose('updating multiple items...');
+            verbose('updating multiple items...');
+            run(dbScanner.updateMultipleItems(updateInput));
         } else {
             verbose('updating single item...');
-            run(dbScanner.update(updateInput.TableName, updateInput));
+            run(dbScanner.updateItem(updateInput.TableName, updateInput));
         }
 
         break;

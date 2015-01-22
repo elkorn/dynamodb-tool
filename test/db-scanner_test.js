@@ -512,4 +512,48 @@ describe('db-scanner', function(done) {
                 done();
             }).catch(done);
     });
+
+    it('should update multiple items', function(done) {
+        var updateItems = [];
+        var dynamo = mockedDynamo();
+        dynamo.updateItem = function(item, cb) {
+            updateItems.push(item);
+            cb(null);
+        };
+
+        var updateInputs = [{
+            TableName: 'table1',
+            Key: {
+                testKey: 1234,
+            },
+            Put: {
+                testValue: true
+            }
+        }, {
+            TableName: 'table1',
+            Key: {
+                testKey: 5678
+            },
+            Put: {
+                testValue: false
+            }
+        }];
+
+        function checkItems() {
+            updateItems.should.eql(updateInputs.map(function(item) {
+                return new UpdateItemDescriptor(
+                    item.TableName,
+                    item);
+            }));
+            done();
+        }
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.updateMultipleItems(updateInputs)
+            .then(checkItems).then(function() {
+                /* jshint ignore:start */
+                checkItems.should.have.been.called;
+                /* jshint ignore:end */
+            }).catch(done);
+    });
 });
