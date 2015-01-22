@@ -206,6 +206,12 @@ function mockedDynamo() {
     };
 }
 
+function hasChecked(fn) {
+    return function() {
+        return fn.should.have.been.called;
+    };
+}
+
 describe('db-scanner', function(done) {
     var dbScanner;
 
@@ -550,10 +556,54 @@ describe('db-scanner', function(done) {
 
         dbScanner = new DBScanner(dynamo);
         dbScanner.updateMultipleItems(updateInputs)
-            .then(checkItems).then(function() {
-                /* jshint ignore:start */
-                checkItems.should.have.been.called;
-                /* jshint ignore:end */
-            }).catch(done);
+            .then(checkItems)
+            .then(hasChecked(checkItems))
+            .catch(done);
+    });
+
+    it('should update all items in a table', function(done) {
+        var updateItems = [];
+        var dynamo = mockedDynamo();
+        var testData = require('./test-data.json');
+
+        dynamo.describeTable = sinon.stub().callsArgWith(1, null, require('./test-description.json'));
+        dynamo.scan = sinon.stub().callsArgWith(1, null, testData);
+        dynamo.updateItem = function(item, cb) {
+            updateItems.push(item);
+            cb(null);
+        };
+
+        dbScanner = new DBScanner(mockedDynamo);
+
+        var updateInput = {
+            TableName: MOCKED_TABLES[0],
+            Put: {
+                testValue: true
+            }
+        };
+
+        var expectedOutput = testData.Items.map(function(item) {
+            return new UpdateItemDescriptor(updateInput.TableName, {
+                TableName: updateInput.TableName,
+                Key: new ItemValueDescriptor({
+                    idPart1: parseInt(item.idPart1.N),
+                    idPart2: parseInt(item.idPart2.N)
+                }),
+                Put: new ItemValueDescriptor(updateInput.Put)
+            });
+        });
+
+        function checkItems() {
+            updateItems.should.eql(expectedOutput);
+            done();
+        }
+
+
+        dbScanner = new DBScanner(dynamo);
+        dbScanner.updateAllInTable(updateInput)
+            .then(checkItems)
+            .then(hasChecked(checkItems))
+            .catch(done);
+
     });
 });

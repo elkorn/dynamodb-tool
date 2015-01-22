@@ -166,6 +166,26 @@ switch (true) {
         }
 
         break;
+    case givenArg('update-all'):
+        enforceSafety();
+        var updateInput;
+        try {
+            updateInput = JSON.parse(argv['update-all']);
+        } catch (e) {
+            updateInput = require(argv['update-all']);
+        }
+
+        var isArray = _.isArray(updateInput);
+
+        if (isArray) {
+            throw new Error('Multiple tables not supported yet!');
+        } else {
+            verbose(require('util').format('updating all items in table %s...', updateInput.TableName));
+            run(dbScanner.updateAllInTable(updateInput));
+        }
+
+        break;
+
     case givenArg('update'):
         enforceSafety();
         var updateInput;
@@ -175,7 +195,9 @@ switch (true) {
             updateInput = require(argv.update);
         }
 
-        if (_.isArray(updateInput)) {
+        var isArray = _.isArray(updateInput);
+
+        if (isArray) {
             verbose('updating multiple items...');
             run(dbScanner.updateMultipleItems(updateInput));
         } else {

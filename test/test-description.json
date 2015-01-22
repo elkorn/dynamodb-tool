@@ -1,0 +1,45 @@
+{
+    "Table": {
+        "AttributeDefinitions": [{
+            "AttributeName": "idPart1",
+            "AttributeType": "N"
+        }, {
+            "AttributeName": "idPart2",
+            "AttributeType": "N"
+        }],
+        "TableName": "table1",
+        "KeySchema": [{
+            "AttributeName": "idPart1",
+            "KeyType": "HASH"
+        }, {
+            "AttributeName": "idPart2",
+            "KeyType": "RANGE"
+        }],
+        "TableStatus": "ACTIVE",
+        "CreationDateTime": "2014-12-23T12:28:06.627Z",
+        "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 8,
+            "WriteCapacityUnits": 1
+        },
+        "TableSizeBytes": 38110,
+        "ItemCount": 6,
+        "GlobalSecondaryIndexes": [{
+            "IndexName": "idPart2-index",
+            "KeySchema": [{
+                "AttributeName": "idPart2",
+                "KeyType": "HASH"
+            }],
+            "Projection": {
+                "ProjectionType": "ALL"
+            },
+            "IndexStatus": "ACTIVE",
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": 4,
+                "WriteCapacityUnits": 1
+            },
+            "IndexSizeBytes": 38110,
+            "ItemCount": 6
+        }]
+    }
+}

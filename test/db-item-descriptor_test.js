@@ -9,6 +9,7 @@ var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
 var BatchWriteItemDescriptor = itemDescriptor.BatchWriteItemDescriptor;
 var UpdateItemDescriptor = itemDescriptor.UpdateItemDescriptor;
+var KeyItemDescriptor = itemDescriptor.KeyItemDescriptor;
 var AwsAttribute = itemDescriptor.AwsAttribute;
 
 var MOCKED_TABLES = ['table1', 'table2'];
@@ -193,5 +194,49 @@ describe('db-item-descriptor', function() {
                 N: obj.Delete.testDelete.toString()
             }
         });
+    });
+
+    it('should leave a value descriptor alone if it already is AWS-compliant', function() {
+        var obj = {
+            Key: {
+                testName: 'testValue'
+            },
+            Put: {
+                testPut: 1
+            },
+            Add: {
+                testAdd: 2
+            },
+            Delete: {
+                testDelete: 3
+            }
+        };
+
+        (new ItemValueDescriptor(new ItemValueDescriptor(obj))).should.eql(new ItemValueDescriptor(obj));
+
+    });
+
+    it('should extract key values from an item', function() {
+        var tableName = 'test';
+        var item = {
+            testKey1: 'a',
+            testKey2: 'b',
+            testVal: 13
+        };
+
+        var tableDesc = {
+            KeySchema: [{
+                AttributeName: 'testKey1'
+            }, {
+                AttributeName: 'testKey2'
+            }]
+        };
+
+        var descriptor = new KeyItemDescriptor(tableName, tableDesc, item);
+        descriptor.should.have.property('TableName', tableName);
+        descriptor.should.have.property('Key');
+        var key = descriptor.Key;
+        key.should.have.property('testKey1', new AwsAttribute(_.pick(item, 'testKey1')).testKey1);
+        key.should.have.property('testKey2', new AwsAttribute(_.pick(item, 'testKey2')).testKey1);
     });
 });
