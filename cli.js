@@ -1,12 +1,13 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 
 'use strict';
 
 var _ = require('lodash');
-var argv = require('minimist')(process.argv.slice(2));
-var config = require(argv.config || './config');
-
 var wait = true;
+var argv = require('./lib/util/argv');
+var log = require('./lib/util/log');
+var modules = require('./lib/main-module-provider');
+var config = require('./lib/util/config');
 
 function stopWaiting(fn) {
     return function() {
@@ -24,7 +25,7 @@ function doWait() {
     }
 }
 
-function log() {
+function cl() {
     return console.log.apply(console, arguments);
 }
 
@@ -32,42 +33,14 @@ function stringify(obj) {
     return JSON.stringify(obj, null, ' ');
 }
 
-function givenArg(val) {
-    return argv.hasOwnProperty(val);
-}
 
 function enforceSafety() {
-    if (!(givenArg('unsafe') || givenArg('u') || /http[s]?:\/\/0\.0\.0\.0(:\d+)?/.test(config.endpoint))) {
+    if (!(argv.given('unsafe') || argv.given('u') || /http[s]?:\/\/0\.0\.0\.0(:\d+)?/.test(config.endpoint))) {
         throw new Error("Connect to local DynamoDB instance or enable --unsafe mode and face the consequences.");
     }
 }
 
-var finish = stopWaiting(_.compose(log, stringify));
-
-function say(msg) {
-    process.stderr.write(msg + '\n');
-}
-
-function verbose(msg) {
-    if (config.verbose) {
-        say(msg);
-    }
-}
-
-function makeDynamo() {
-    var AWS = require('aws-sdk');
-    var result = new AWS.DynamoDB({
-        region: config.region || AWS.config.region || 'eu-west-1',
-        endpoint: config.endpoint || AWS.config.endpoint
-    });
-
-    verbose('\nEndpoint: ' + result.endpoint.host + '\n');
-    return result;
-}
-
-function makeDbScanner() {
-    return new(require('./lib/db-scanner')).DBScanner(makeDynamo());
-}
+var finish = stopWaiting(_.compose(cl, stringify));
 
 function run(promise) {
     promise
@@ -80,7 +53,7 @@ function parseItemArguments(argv) {
         throw new Error('The argument for item operations must be a string.');
     }
 
-    var args = argv.split(/=/);
+    var args = argv.paramssplit(/=/);
     console.log(args);
     try {
         args[1] = JSON.parse(args[1]);
@@ -92,81 +65,81 @@ function parseItemArguments(argv) {
         args[1] = require(args[1]);
     }
 
-    verbose(args);
+    log.verbose(args);
     return args;
 }
 
-var dbScanner = makeDbScanner();
+var dbScanner = modules.makeDbScanner();
 
 switch (true) {
-    case givenArg('scan'):
-        if (argv.scan === true) {
+    case argv.given('scan'):
+        if (argv.params.scan === true) {
             run(dbScanner.scanAllTables());
         } else {
-            run(dbScanner.scanTable(argv.scan));
+            run(dbScanner.scanTable(argv.params.scan));
         }
 
         break;
-    case givenArg('list'):
-        verbose('listing tables...');
+    case argv.given('list'):
+        log.verbose('listing tables...');
         run(dbScanner.listTables());
         break;
-    case givenArg('schema'):
-        verbose('getting DB schema...');
-        run(dbScanner.getTableSchema(argv.schema));
+    case argv.given('schema'):
+        log.verbose('getting DB schema...');
+        run(dbScanner.getTableSchema(argv.params.schema));
         break;
-    case givenArg('describe'):
-        if (typeof(argv.describe) === 'string') {
-            verbose('describing a table...');
-            run(dbScanner.describeTable(argv.describe));
+    case argv.given('describe'):
+        if (typeof(argv.params.describe) === 'string') {
+            log.verbose('describing a table...');
+            run(dbScanner.describeTable(argv.params.describe));
         } else {
-            verbose('describing all tables...');
+            log.verbose('describing all tables...');
             run(dbScanner.describeAllTables());
         }
         break;
-    case givenArg('create'):
+    case argv.given('create'):
         enforceSafety();
-        var descriptions = require(argv.create);
+        var descriptions = require(argv.params.create);
         if (_.isArray(descriptions)) {
-            verbose('creating multiple tables...');
+            log.verbose('creating multiple tables...');
             run(dbScanner.createManyTables(descriptions));
         } else {
-            verbose('creating a table...');
+            log.verbose('creating a table...');
             run(dbScanner.createTable(descriptions));
         }
         break;
-    case givenArg('delete'):
+    case argv.given('delete'):
         enforceSafety();
-        verbose('deleting a table...');
-        run(dbScanner.deleteTable(argv.delete));
+        log.verbose('deleting a table...');
+        run(dbScanner.deleteTable(argv.params.delete));
         break;
-    case givenArg('delete-all'):
+    case argv.given('delete-all'):
         enforceSafety();
-        verbose('deleting all tables...');
+        log.verbose('deleting all tables...');
         run(dbScanner.deleteAllTables());
         break;
-    case givenArg('snapshot'):
-        say('creating a snapshot...');
+    case argv.given('snapshot'):
+        log.say('creating a snapshot...');
         run(dbScanner.createSnapshot());
         break;
-    case givenArg('get'):
-        verbose('getting item...');
-        var args = parseItemArguments(argv.get);
+    case argv.given('get'):
+        log.verbose('getting item...');
+        var args = parseItemArguments(argv.params.get);
         run(dbScanner.getItem(args[0], args[1]));
         break;
-    case givenArg('put'):
+    case argv.given('put'):
         enforceSafety();
-        var args = parseItemArguments(argv.put);
+        var args = parseItemArguments(argv.params.put);
         if (_.isArray(args[1])) {
-            verbose('putting mutliple items...');
+            log.verbose('putting mutliple items...');
             run(dbScanner.putMultipleItems(args[0], args[1]));
         } else {
-            verbose('putting single item...');
+            log.verbose('putting single item...');
             run(dbScanner.putItem(args[0], args[1]));
         }
 
         break;
-    case givenArg('update-all'):
+    case argv.given('update-all'):
         enforceSafety();
         var updateInput;
         try {
@@ -180,42 +153,42 @@ switch (true) {
         if (isArray) {
             throw new Error('Multiple tables not supported yet!');
         } else {
-            verbose(require('util').format('updating all items in table %s...', updateInput.TableName));
+            log.verbose(require('util').format('updating all items in table %s...', updateInput.TableName));
             run(dbScanner.updateAllInTable(updateInput));
         }
 
         break;
 
-    case givenArg('update'):
+    case argv.given('update'):
         enforceSafety();
         var updateInput;
         try {
-            updateInput = JSON.parse(argv.update);
+            updateInput = JSON.parse(argv.params.update);
         } catch (e) {
-            updateInput = require(argv.update);
+            updateInput = require(argv.params.update);
         }
 
         var isArray = _.isArray(updateInput);
 
         if (isArray) {
-            verbose('updating multiple items...');
+            log.verbose('updating multiple items...');
             run(dbScanner.updateMultipleItems(updateInput));
         } else {
-            verbose('updating single item...');
+            log.verbose('updating single item...');
             run(dbScanner.updateItem(updateInput.TableName, updateInput));
         }
 
         break;
-    case givenArg('recreate'):
+    case argv.given('recreate'):
         enforceSafety();
         var snapshot;
         try {
-            snapshot = JSON.parse(argv.recreate);
+            snapshot = JSON.parse(argv.params.recreate);
         } catch (e) {
-            snapshot = require(argv.recreate);
+            snapshot = require(argv.params.recreate);
         }
 
-        say('recreating database...');
+        log.say('recreating database...');
 
         run(dbScanner.deleteAllTables()
             .then(
