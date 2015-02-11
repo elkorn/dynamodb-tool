@@ -29,120 +29,122 @@ function parseItemArguments(argv) {
 }
 
 var dbScanner = modules.makeDbScanner();
-var command;
 
-switch (true) {
-  case argv.given('scan'):
-    command = cli.commands.scan;
-    break;
-  case argv.given('list'):
-    log.verbose('listing tables...');
-    command = cli.commands.list;
-    break;
-  case argv.given('schema'):
-    log.verbose('getting DB schema...');
-    command = cli.commands.schema;
-    break;
-  case argv.given('describe'):
-    if (typeof(argv.params.describe) === 'string') {
-      log.verbose('describing a table...');
-      command = cli.commands.describe.one;
-    } else {
-      log.verbose('describing all tables...');
-      command = cli.commands.describe.all;
-    }
-    break;
-  case argv.given('create'):
-    var descriptions = require(argv.params.create);
-    if (_.isArray(descriptions)) {
-      log.verbose('creating multiple tables...');
-      command = _.partial(cli.createTable.many, descriptions);
-    } else {
-      log.verbose('creating a table...');
-      command = _.partial(cli.createTable.one, descriptions);
-    }
-    break;
-  case argv.given('delete'):
-    log.verbose('deleting a table...');
-    command = cli.commands.delete.one;
-    break;
-  case argv.given('delete-all'):
-    log.verbose('deleting all tables...');
-    command = cli.commands.delete.all;
-    break;
-  case argv.given('snapshot'):
-    log.say('creating a snapshot...');
-    command = cli.commands.snapshot;
-    break;
-  case argv.given('get'):
-    log.verbose('getting item...');
-    var args = parseItemArguments(argv.params.get);
-    command = _.partial(cli.commands.getItem, args);
-    break;
-  case argv.given('put'):
-    var args = parseItemArguments(argv.params.put);
-    if (_.isArray(args[1])) {
-      log.verbose('putting mutliple items...');
-      command = cli.commands.putItem.many;
-    } else {
-      log.verbose('putting single item...');
-      command = cli.commands.putItem.one;
-    }
+(function() {
+  var args, updateInput, isArray;
 
-    break;
-  case argv.given('update-all'):
-    var updateInput;
-    try {
-      updateInput = JSON.parse(argv.params['update-all']);
-    } catch (e) {
-      updateInput = require(argv.params['update-all']);
-    }
+  switch (true) {
+    case argv.given('scan'):
+      return cli.commands.scan;
 
-    var isArray = _.isArray(updateInput);
+    case argv.given('list'):
+      log.verbose('listing tables...');
+      return cli.commands.list;
 
-    if (isArray) {
-      command = cli.commands.update.allIn.manyTables;
-    } else {
-      log.verbose(require('util').format('updating all items in table %s...', updateInput.TableName));
-      command = _.partial(cli.commands.update.allIn.oneTable, updateInput);
-    }
+    case argv.given('schema'):
+      log.verbose('getting DB schema...');
+      return cli.commands.schema;
 
-    break;
+    case argv.given('describe'):
+      if (typeof(argv.params.describe) === 'string') {
+        log.verbose('describing a table...');
+        return cli.commands.describe.one;
+      } else {
+        log.verbose('describing all tables...');
+        return cli.commands.describe.all;
+      }
+      break;
 
-  case argv.given('update'):
-    var updateInput;
-    try {
-      updateInput = JSON.parse(argv.params.update);
-    } catch (e) {
-      updateInput = require(argv.params.update);
-    }
+    case argv.given('create'):
+      var descriptions = require(argv.params.create);
+      if (_.isArray(descriptions)) {
+        log.verbose('creating multiple tables...');
+        return _.partial(cli.createTable.many, descriptions);
+      } else {
+        log.verbose('creating a table...');
+        return _.partial(cli.createTable.one, descriptions);
+      }
+      break;
 
-    var isArray = _.isArray(updateInput);
+    case argv.given('delete'):
+      log.verbose('deleting a table...');
+      return cli.commands.delete.one;
 
-    if (isArray) {
-      log.verbose('updating multiple items...');
-      command = cli.commands.update.many;
-    } else {
-      log.verbose('updating single item...');
-      command = cli.commands.update.one;
-    }
+    case argv.given('delete-all'):
+      log.verbose('deleting all tables...');
+      return cli.commands.delete.all;
 
-    break;
-  case argv.given('recreate'):
-    var snapshot;
-    try {
-      snapshot = JSON.parse(argv.params.recreate);
-    } catch (e) {
-      snapshot = require(argv.params.recreate);
-    }
+    case argv.given('snapshot'):
+      log.say('creating a snapshot...');
+      return cli.commands.snapshot;
 
-    log.say('recreating database...');
-    command = _.partial(cli.commands.recreate, snapshot);
-    break;
-  default:
-    log.say('nothing to do.');
-    command = cli.commands.noop;
-}
+    case argv.given('get'):
+      log.verbose('getting item...');
+      args = parseItemArguments(argv.params.get);
+      return _.partial(cli.commands.getItem, args);
 
-command(argv, dbScanner);
+    case argv.given('put'):
+      args = parseItemArguments(argv.params.put);
+      if (_.isArray(args[1])) {
+        log.verbose('putting mutliple items...');
+        return cli.commands.putItem.many;
+      } else {
+        log.verbose('putting single item...');
+        return cli.commands.putItem.one;
+      }
+      break;
+
+    case argv.given('update-all'):
+      try {
+        updateInput = JSON.parse(argv.params['update-all']);
+      } catch (e) {
+        updateInput = require(argv.params['update-all']);
+      }
+
+      isArray = _.isArray(updateInput);
+
+      if (isArray) {
+        return cli.commands.update.allIn.manyTables;
+      } else {
+        log.verbose(require('util').format('updating all items in table %s...', updateInput.TableName));
+        return _.partial(cli.commands.update.allIn.oneTable, updateInput);
+      }
+      break;
+
+    case argv.given('update'):
+      try {
+        updateInput = JSON.parse(argv.params.update);
+      } catch (e) {
+        updateInput = require(argv.params.update);
+      }
+
+      isArray = _.isArray(updateInput);
+
+      if (isArray) {
+        log.verbose('updating multiple items...');
+        return cli.commands.update.many;
+      } else {
+        log.verbose('updating single item...');
+        return cli.commands.update.one;
+      }
+      break;
+
+    case argv.given('recreate'):
+      var snapshot;
+      try {
+        snapshot = JSON.parse(argv.params.recreate);
+      } catch (e) {
+        snapshot = require(argv.params.recreate);
+      }
+
+      log.say('recreating database...');
+      return _.partial(cli.commands.recreate, snapshot);
+
+    default:
+      log.say('nothing to do.');
+      return cli.commands.noop;
+  }
+
+}())(argv, dbScanner);
+
 cli.wait();
