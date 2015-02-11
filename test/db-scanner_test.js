@@ -5,14 +5,15 @@ require('chai').should();
 var Q = require('q');
 var _ = require('lodash');
 
-var DBSnapshot = require('../lib/db-snapshot');
-var itemDescriptor = require('../lib/db-item-descriptor');
+var DBSnapshot = require('../lib/core/db-snapshot');
+var itemDescriptor = require('../lib/core/db-item-descriptor');
+var DBScanner = require('../lib/core/db-scanner').DBScanner;
+
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
 var UpdateItemDescriptor = itemDescriptor.UpdateItemDescriptor;
 var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 
-var DBScanner = require('../lib/db-scanner').DBScanner;
 var MOCKED_TABLES = ['table1', 'table2'];
 var MOCKED_TABLE_DATA = {
     Items: [{

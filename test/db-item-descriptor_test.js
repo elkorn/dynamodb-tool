@@ -3,7 +3,7 @@
 require('chai').should();
 var _ = require('lodash');
 
-var itemDescriptor = require('../lib/db-item-descriptor');
+var itemDescriptor = require('../lib/core/db-item-descriptor');
 var ItemDescriptor = itemDescriptor.ItemDescriptor;
 var ItemValueDescriptor = itemDescriptor.ItemValueDescriptor;
 var PutItemDescriptor = itemDescriptor.PutItemDescriptor;
